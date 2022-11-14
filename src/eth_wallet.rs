@@ -1,3 +1,4 @@
+use std::time::{SystemTime, UNIX_EPOCH};
 use anyhow::{bail, Result, Ok};
 use secp256k1::{
     rand::{rngs, SeedableRng},
@@ -61,7 +62,7 @@ impl Wallet {
 
 pub fn generate_keypair() -> (SecretKey, PublicKey) {
     let secp = secp256k1::Secp256k1::new();
-    let mut rng = rngs::StdRng::seed_from_u64(111);
+    let mut rng = rngs::JitterRng::new_with_timer(get_nstime);
     return secp.generate_keypair(&mut rng);
 }
 
@@ -72,4 +73,13 @@ pub fn public_key_address(public_key: &PublicKey) -> Address {
     let hash = keccak256(&public_key[1..]);
 
     return Address::from_slice(&hash[12..]);
+}
+
+fn get_nstime() -> u64 {
+    let dur = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+    // The correct way to calculate the current time is
+    // `dur.as_secs() * 1_000_000_000 + dur.subsec_nanos() as u64`
+    // But this is faster, and the difference in terms of entropy is
+    // negligible (log2(10^9) == 29.9).
+    dur.as_secs() << 30 | dur.subsec_nanos() as u64
 }
