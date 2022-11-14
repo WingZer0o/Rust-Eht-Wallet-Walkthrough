@@ -46,6 +46,17 @@ impl Wallet {
         let wallet: Wallet = serde_json::from_reader(buf_reader)?;
         Ok(wallet)
     }
+
+    pub fn get_secret_key(&self) -> Result<SecretKey> {
+        let secret_key = SecretKey::from_str(&self.secret_key)?;
+        Ok(secret_key)
+    }
+
+    pub fn get_public_key(&self) -> Result<PublicKey> {
+        let pub_key = PublicKey::from_str(&self.public_key)?;
+        Ok(pub_key)
+    }
+
 }
 
 pub fn generate_keypair() -> (SecretKey, PublicKey) {
