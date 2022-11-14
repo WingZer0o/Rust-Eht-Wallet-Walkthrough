@@ -9,7 +9,12 @@ use std::io::{BufWriter, BufRead};
 use std::str::FromStr;
 use std::{fs::OpenOptions, io::BufReader};
 use tiny_keccak::keccak256;
-use web3::types::Address;
+use web3::{types::Address, transports::WebSocket};
+use web3::{
+    transports,
+    types::{U256},
+    Web3,
+};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Wallet {
@@ -73,6 +78,11 @@ pub fn public_key_address(public_key: &PublicKey) -> Address {
     let hash = keccak256(&public_key[1..]);
 
     return Address::from_slice(&hash[12..]);
+}
+
+pub async fn establish_web3_connection(url: &str) -> Result<Web3<WebSocket>> {
+    let transport = web3::transports::WebSocket::new(url).await?;
+    Ok(web3::Web3::new(transport))
 }
 
 fn get_nstime() -> u64 {

@@ -1,6 +1,9 @@
+use anyhow::Result;
 mod eth_wallet;
+use std::env;
 
-fn main() {
+#[tokio::main]
+async fn main() -> Result<()> {
     dotenv::dotenv().ok();
     let (secret_key, pub_key) = eth_wallet::generate_keypair();
 
@@ -14,8 +17,16 @@ fn main() {
     println!("crypto_wallet: {:?}", &crypto_wallet);
 
     let wallet_file_path = "crypto_wallet.json";
-    crypto_wallet.save_to_file(wallet_file_path);
+    crypto_wallet.save_to_file(wallet_file_path)?;
 
-    let loaded_wallet = eth_wallet::Wallet::from_file(wallet_file_path);
+    let loaded_wallet = eth_wallet::Wallet::from_file(wallet_file_path)?;
     println!("loaded_wallet: {:?}", loaded_wallet);
+
+    let endpoint = env::var("INFURA_RINKEBY_WS")?;
+    let web3_con = eth_wallet::establish_web3_connection(&endpoint).await?;
+
+    let block_number = web3_con.eth().block_number().await?;
+    println!("block number: {}", &block_number);
+
+    Ok(())
 }
