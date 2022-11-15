@@ -62,7 +62,18 @@ impl Wallet {
         let pub_key = PublicKey::from_str(&self.public_key)?;
         Ok(pub_key)
     }
+    
+    pub async fn get_balance(&self, web3_connection: &Web3<WebSocket>) -> Result<U256> {
+        let wallet_address = Address::from_str(&self.public_address)?;
+        let balance = web3_connection.eth().balance(wallet_address, None).await?;
+    
+        Ok(balance)
+    }
 
+    pub async fn get_balance_in_eth(&self, web3_connection: &Web3<transports::WebSocket>,) -> Result<f64> {
+        let wei_balance = self.get_balance(web3_connection).await?;
+        Ok(wei_to_eth(wei_balance))
+    }
 }
 
 pub fn generate_keypair() -> (SecretKey, PublicKey) {
@@ -85,6 +96,7 @@ pub async fn establish_web3_connection(url: &str) -> Result<Web3<WebSocket>> {
     Ok(web3::Web3::new(transport))
 }
 
+
 fn get_nstime() -> u64 {
     let dur = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
     // The correct way to calculate the current time is
@@ -92,4 +104,9 @@ fn get_nstime() -> u64 {
     // But this is faster, and the difference in terms of entropy is
     // negligible (log2(10^9) == 29.9).
     dur.as_secs() << 30 | dur.subsec_nanos() as u64
+}
+
+fn wei_to_eth(wei_val: U256) -> f64 {
+    let res = wei_val.as_u128() as f64;
+    res / 1_000_000_000_000_000_000.0
 }
